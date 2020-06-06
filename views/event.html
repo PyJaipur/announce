@@ -1,14 +1,15 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Event: {{event.group.name}} | {{ event.title }}</h2>
-<a href='#'><button>G-calendar</button></a>
-<a href='#'><button>Website</button></a>
-<a href='#'><button>Linkedin</button></a>
-<a href='#'><button>Meetup</button></a>
-<a href='#'><button>Twitter</button></a>
-<a href='#'><button>Mailinglist</button></a>
-<a href='#'><button>Telegram</button></a>
-<hr>
+
+{% for action in actions %}
+  {% if event.allow_action(action.slug) %}
+  <a href='{{ url_for('get_action', action=action.slug, eventid=event.id)}}'>
+    <button>{{ action.name }}</button></a>
+  {% else %}
+    <button disabled>G-calendar</button>
+  {% endif %}
+{% endfor %}
 <form method='post'>
   <fieldset>
     <label>Title</label>

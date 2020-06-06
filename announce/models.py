@@ -1,5 +1,7 @@
 import pendulum
+from copy import deepcopy
 from datetime import datetime
+from collections import namedtuple
 from sqlalchemy import (
     create_engine,
     Column,
@@ -147,7 +149,7 @@ class Event(Base):
     group_id = Column(
         Integer, ForeignKey("group.id", ondelete="cascade"), nullable=False
     )
-    actions_done = Column(JSON)
+    actions_info = Column(JSON, default={})
 
     @property
     def date(self):
@@ -167,16 +169,24 @@ class Event(Base):
             return None
         return pendulum.instance(self.end).format("HH:mm")
 
-    def asdict(self):
-        return dict(
-            eventid=self.id,
-            title=self.title,
-            start=self.start.to_iso8601_string(),
-            end=self.end.to_iso8601_string(),
-            description=self.description,
-            imageid=self.image_id,
-            actions_done=self.actions_done,
+    def freeze(self):
+        FrozenEvent = namedtuple(
+            "FrozenEvent", "id title start end description image_url actions_info"
         )
+        return FrozenEvent(
+            **dict(
+                id=self.id,
+                title=self.title,
+                start=self.start,
+                end=self.end,
+                image_url=self.image_url,
+                description=self.description,
+                actions_info=deepcopy(self.actions_info),
+            )
+        )
+
+    def allow_action(self, action):
+        return self.actions_info.get(action, {}).get("available", True)
 
 
 Base.metadata.create_all(engine)

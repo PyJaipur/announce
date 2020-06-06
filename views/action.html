@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Event: {{event.group.name}} | {{ event.title }}</h2>
+<h2>{{ action }}</h2>
+<hr>
+<h3>{{ event.title }}</h3>
+<time>{{ event.start }}</time> - <time> {{ event.end }} </time>
+<pre>{{ event.description }}</pre>
+{% if event.image_url %}
+<h4>Event poster</h4>
+<img src='{{ event.image_url }}' alt='event poster'>
+{% else %}
+<h4>This event has no poster</h4>
+{% endif %}
+<hr>
+This is the final information that will be send out for this action. To edit these details you can go back and edit the event. Do you want to proceed with the action?
+<form method='post'><input type='submit' value='Proceed'></form>
+{% endblock %}

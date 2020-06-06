@@ -8,6 +8,10 @@ from urllib.parse import urlparse, parse_qs, urlencode
 from announce import const
 
 
+def preprocess(event):
+    return event
+
+
 def run(session, event):
     if event.add_to_cal is not None:
         return event

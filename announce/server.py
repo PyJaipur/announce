@@ -1,5 +1,6 @@
 import bottle
 import pendulum
+from collections import namedtuple
 from bottle_tools import fill_args
 from importlib import import_module
 from announce import plugins, const
@@ -184,7 +185,17 @@ def get_event(eventid, Event):
     event = session.query(Event).filter_by(id=eventid).first()
     if event is None:
         return bottle.redirect(app.get_url("get_dashboard"))
-    return render("event.html", event=event)
+    Ac = namedtuple("Ac", "name slug")
+    actions = [
+        Ac("G-calendar", "announce.platforms.google"),
+        Ac("Website", "announce.platforms.website"),
+        Ac("Linkedin", "announce.platforms.linkedin"),
+        Ac("Meetup", "announce.platforms.meetup"),
+        Ac("Twitter", "announce.platforms.twitter"),
+        Ac("Mailing list", "announce.platforms.mailinglist"),
+        Ac("Telegram", "announce.platforms.telegram"),
+    ]
+    return render("event.html", event=event, actions=actions)
 
 
 @app.post("/event", name="post_event")
@@ -201,3 +212,16 @@ def post_event(eventid, title, date, start, end, description, image_url, Event):
     event.image_url = image_url
     session.commit()
     return bottle.redirect(app.get_url("get_event", eventid=eventid))
+
+
+@app.get("/action", name="get_action")
+@fill_args
+def get_action(eventid, action, Event):
+    session = bottle.request.session
+    event = session.query(Event).filter_by(id=eventid).first()
+    if event is None:
+        return bottle.redirect(app.get_url("get_dashboard"))
+    event = event.freeze()
+    mod = import_module(action)
+    event = mod.preprocess(event)
+    return render("action.html", event=event, action=action)
