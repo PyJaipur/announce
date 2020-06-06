@@ -1,4 +1,5 @@
 import bottle
+import pendulum
 from bottle_tools import fill_args
 from importlib import import_module
 from announce import plugins, const
@@ -28,6 +29,7 @@ def post_login(otp, Otp, User, LoginToken, Group, Member, Cred, AuditLog):
     u = session.query(User).filter_by(tg_handle=o.tg_handle).first()
     if u is None:
         u = User(tg_handle=o.tg_handle)
+        session.add(u)
         g = Group.new_group(session, creator=u, name=f"{u.tg_handle}-group")
     tok = LoginToken.loop_create(session, user=u)
     session.delete(o)
@@ -160,3 +162,42 @@ def get_events(groupid, Group):
     I = bottle.request.user.tg_handle
     group = session.query(Group).filter_by(id=groupid).first()
     return render("events.html", group=group)
+
+
+@app.post("/events", name="post_events")
+@fill_args
+def post_events(groupid, title, Group, Event, AuditLog):
+    session = bottle.request.session
+    I = bottle.request.user.tg_handle
+    g = session.query(Group).filter_by(id=groupid).first()
+    ev = Event(group_id=g.id, title=title)
+    session.add(ev)
+    session.add(AuditLog(text=f"{I} created event `{title}`", group_id=g.id))
+    session.commit()
+    return bottle.redirect(app.get_url("get_events", groupid=groupid))
+
+
+@app.get("/event", name="get_event")
+@fill_args
+def get_event(eventid, Event):
+    session = bottle.request.session
+    event = session.query(Event).filter_by(id=eventid).first()
+    if event is None:
+        return bottle.redirect(app.get_url("get_dashboard"))
+    return render("event.html", event=event)
+
+
+@app.post("/event", name="post_event")
+@fill_args
+def post_event(eventid, title, date, start, end, description, image_url, Event):
+    session = bottle.request.session
+    event = session.query(Event).filter_by(id=eventid).first()
+    if event is None:
+        return bottle.redirect(app.get_url("get_dashboard"))
+    event.title = title
+    event.start = pendulum.parse(f"{date} {start}", tz="Asia/Kolkata")
+    event.end = pendulum.parse(f"{date} {end}", tz="Asia/Kolkata")
+    event.description = description
+    event.image_url = image_url
+    session.commit()
+    return bottle.redirect(app.get_url("get_event", eventid=eventid))

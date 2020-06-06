@@ -1,3 +1,16 @@
 {% extends 'base.html' %}
 {% block content %}
+<h2>Group: {{ group.name }}</h2>
+<ul>
+  {% for event in group.events %}
+  <li>
+    {{ event.start }} |
+    <a href='{{ url_for('get_event', eventid=event.id) }}'>{{ event.title }}</a>
+  </li>
+  {% endfor %}
+  <form method='post'>
+    <input name='title' placeholder='title'>
+    <input type='submit' value='Create new event'>
+  </form>
+</ul>
 {% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Event: {{event.group.name}} | {{ event.title }}</h2>
+<a href='#'><button>G-calendar</button></a>
+<a href='#'><button>Website</button></a>
+<a href='#'><button>Linkedin</button></a>
+<a href='#'><button>Meetup</button></a>
+<a href='#'><button>Twitter</button></a>
+<a href='#'><button>Mailinglist</button></a>
+<a href='#'><button>Telegram</button></a>
+<hr>
+<form method='post'>
+  <fieldset>
+    <label>Title</label>
+    <input name='title' value='{{ event.title }}'>
+  </fieldset>
+  <fieldset>
+    <label>Date</label>
+    <input name='date' type='date' value='{{event.date}}' >
+  </fieldset>
+  <fieldset>
+    <label>Start time</label>
+    <input name='start' type='time' value='{{ event.start_time }}'>
+  </fieldset>
+  <fieldset>
+    <label>End time</label>
+    <input name='end' type='time' value='{{ event.end_time }}'>
+  </fieldset>
+  <fieldset>
+    <label>Description</label>
+    <textarea name='description' rows=10>{{ event.description }}</textarea>
+  </fieldset>
+  <fieldset>
+    <label>Poster url</label>
+    <input name='image_url' value='{{ event.image_url }}'>
+    {% if event.image_url %}
+    <img src='{{ event.image_url }}' alt=''>
+    {% endif %}
+  </fieldset>
+  <input type='submit' value='Update event details'>
+</form>
+{% endblock %}

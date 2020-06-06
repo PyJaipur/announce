@@ -1,3 +1,4 @@
+import pendulum
 from datetime import datetime
 from sqlalchemy import (
     create_engine,
@@ -50,6 +51,7 @@ class Group(Base):
     name = Column(String)
     credentials = relationship("Cred", backref="group", order_by="Cred.id")
     memberships = relationship("Member", backref="group", order_by="Member.id")
+    events = relationship("Event", backref="group", order_by="Event.start")
     auditlogs = relationship(
         "AuditLog", backref="group", order_by="desc(AuditLog.timestamp)"
     )
@@ -124,12 +126,6 @@ class LoginToken(Base):
             return tok
 
 
-class Image(Base):
-    __tablename__ = "image"
-    id = Column(Integer, primary_key=True)
-    path = Column(String)
-
-
 class Cred(Base):
     __tablename__ = "cred"
     id = Column(Integer, primary_key=True)
@@ -143,12 +139,33 @@ class Cred(Base):
 class Event(Base):
     __tablename__ = "event"
     id = Column(Integer, primary_key=True)
-    title = Column(String)
+    title = Column(String, nullable=False)
     start = Column(DateTime)
     end = Column(DateTime)
     description = Column(String)
-    image_id = Column(Integer, ForeignKey("image.id", ondelete="cascade"))
+    image_url = Column(String)
+    group_id = Column(
+        Integer, ForeignKey("group.id", ondelete="cascade"), nullable=False
+    )
     actions_done = Column(JSON)
+
+    @property
+    def date(self):
+        if self.start is None:
+            return None
+        return pendulum.instance(self.start).format("YYYY-MM-DD")
+
+    @property
+    def start_time(self):
+        if self.start is None:
+            return None
+        return pendulum.instance(self.start).format("HH:mm")
+
+    @property
+    def end_time(self):
+        if self.start is None:
+            return None
+        return pendulum.instance(self.end).format("HH:mm")
 
     def asdict(self):
         return dict(
@@ -167,7 +184,6 @@ Session = sessionmaker(engine)
 bt.common_kwargs.update(
     {
         "Event": Event,
-        "Image": Image,
         "Otp": Otp,
         "User": User,
         "Group": Group,
