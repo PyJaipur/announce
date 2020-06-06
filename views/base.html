@@ -7,7 +7,8 @@
     {% block head %}{% endblock %}
   </head>
   <body>
-  <h1> User: {{ request.user.tg_handle if not request.user.is_anon else '---' }} </h1>
+    <h1> <a href='{{ url_for('get_dashboard') }}'>Announce</a></h1>
+    Logged in as: {{ request.user.tg_handle if not request.user.is_anon else '---' }} 
   {% block content %}
   {% endblock %}
   </body>

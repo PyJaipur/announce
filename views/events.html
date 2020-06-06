@@ -4,7 +4,7 @@
 <ul>
   {% for event in group.events %}
   <li>
-    {{ event.start }} |
+    {{ event.date }} <b> {{ event.start_time }} </b>|
     <a href='{{ url_for('get_event', eventid=event.id) }}'>{{ event.title }}</a>
   </li>
   {% endfor %}

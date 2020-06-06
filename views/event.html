@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>Event: {{event.group.name}} | {{ event.title }}</h2>
+<h2>Event:
+  <a href='{{ url_for('get_group', groupid=event.group.id) }}'> {{event.group.name}} </a> |
+  {{ event.title }}</h2>
 
 {% for action in actions %}
   {% if event.allow_action(action.slug) %}
@@ -39,4 +41,19 @@
   </fieldset>
   <input type='submit' value='Update event details'>
 </form>
+<hr>
+<h3>Logs</h3>
+<table>
+  <thead><tr><th>Timestamp</th><th>Action</th></tr></thead>
+  <tbody>
+    {% for log in event.group.auditlogs %}
+      {% if ' ran ' in log.text %}
+        <tr>
+          <td>{{ log.timestamp }}</td>
+          <td>{{ log.text }}</td>
+        </tr>
+      {% endif %}
+    {% endfor %}
+  </tbody>
+</table>
 {% endblock %}

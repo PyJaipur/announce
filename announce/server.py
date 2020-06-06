@@ -196,8 +196,8 @@ def post_event(eventid, title, date, start, end, description, image_url, Event):
     if event is None:
         return bottle.redirect(app.get_url("get_dashboard"))
     event.title = title
-    event.start = pendulum.parse(f"{date} {start}", tz="Asia/Kolkata")
-    event.end = pendulum.parse(f"{date} {end}", tz="Asia/Kolkata")
+    event.start = pendulum.parse(f"{date} {start}", tz=const.timezone)
+    event.end = pendulum.parse(f"{date} {end}", tz=const.timezone)
     event.description = description
     event.image_url = image_url
     session.commit()
@@ -211,26 +211,34 @@ def get_action(eventid, action, Event):
     event = session.query(Event).filter_by(id=eventid).first()
     if event is None:
         return bottle.redirect(app.get_url("get_dashboard"))
-    event = event.freeze()
+    if not bottle.request.user.get_membership_for(event.group).has_credential(action):
+        return bottle.redirect(app.url_for("get_event", eventid=eventid))
+    fevent = event.freeze()
     mod = import_module(action)
-    event = mod.preprocess(event)
-    return render("action.html", event=event, action=action)
+    fevent = mod.preprocess(fevent)
+    return render("action.html", event=fevent, action=action, group=event.group)
 
 
 @app.post("/action", name="post_action")
 @fill_args
 def post_action(eventid, action, Event, AuditLog):
     session = bottle.request.session
+    I = bottle.request.user.tg_handle
     event = session.query(Event).filter_by(id=eventid).first()
     if event is None:
         return bottle.redirect(app.get_url("get_dashboard"))
-    # Can user perform this action?
+    if not bottle.request.user.get_membership_for(event.group).has_credential(action):
+        return bottle.redirect(app.url_for("get_event", eventid=eventid))
+    # Perform action
     f_event = event.freeze()
-    mod = import_module(f_action)
-    event = mod.preprocess(f_event)
+    mod = import_module(action)
+    f_event = mod.preprocess(f_event)
     updated_info = mod.run(f_event, f_event.actions_info.get(action, {}))
+    # Update database
     inf = event.freeze().actions_info
-    inf.update(updated_info)
+    if action not in inf:
+        inf[action] = {}
+    inf[action].update(updated_info)
     event.actions_info = inf
     session.add(
         AuditLog(text=f"{I} ran {action} for {event.id}", group_id=event.group_id)

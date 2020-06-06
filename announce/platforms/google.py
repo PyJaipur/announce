@@ -44,19 +44,21 @@ def auth(path):
 
 
 def run(event, info):
-    session = 
-    if 'completed' in info:
+    if "completed" in info:
         return info
-    service = refresh_google()
+    service = auth(const.secrets_cache_path)
     body = {
         "summary": event.title,
-        "description": event.short,
+        "description": event.description,
         "visibility": "public",
         "start": {
-            "dateTime": event.start.to_iso8601_string(),
-            "timeZone": "Asia/Kolkata",
+            "dateTime": pendulum.instance(event.start).to_iso8601_string(),
+            "timeZone": const.timezone,
         },
-        "end": {"dateTime": event.end.to_iso8601_string(), "timeZone": "Asia/Kolkata",},
+        "end": {
+            "dateTime": pendulum.instance(event.end).to_iso8601_string(),
+            "timeZone": const.timezone,
+        },
     }
 
     calevent = service.events().insert(calendarId="primary", body=body).execute()
@@ -87,6 +89,10 @@ def run(event, info):
         .execute()
     )
     call_link = conf.get("hangoutLink")
-    return const.Event(
-        **{**event._asdict(), "add_to_cal": add_to_cal, "call": call_link}
-    )
+    return {
+        "add_to_calendar_link": add_to_cal,
+        "call": call_link,
+        "available": False,
+        "calendar_event": calevent,
+        "conference_details": conf,
+    }

@@ -36,6 +36,11 @@ class User(Base):
     is_anon = False
     memberships = relationship("Member", backref="user")
 
+    def get_membership_for(self, group):
+        for mem in self.memberships:
+            if mem.group_id == group.id:
+                return mem
+
 
 class AuditLog(Base):
     __tablename__ = "auditlog"
@@ -65,6 +70,8 @@ class Group(Base):
         session.commit()
         session.add(Cred(name="all", value="-", group_id=g.id))
         session.add(Cred(name="manage", value="-", group_id=g.id))
+        for action in const.actions:
+            session.add(Cred(name=action.slug, value="-", group_id=g.id))
         session.add(
             Member(
                 user_id=creator.id,
@@ -161,13 +168,13 @@ class Event(Base):
     def start_time(self):
         if self.start is None:
             return None
-        return pendulum.instance(self.start).format("HH:mm")
+        return pendulum.instance(self.start).in_tz(const.timezone).format("HH:mm")
 
     @property
     def end_time(self):
         if self.start is None:
             return None
-        return pendulum.instance(self.end).format("HH:mm")
+        return pendulum.instance(self.end).in_tz(const.timezone).format("HH:mm")
 
     def freeze(self):
         FrozenEvent = namedtuple(

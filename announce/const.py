@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from collections import namedtuple
 
 
@@ -7,9 +8,11 @@ def env(key, default=None):
     return val
 
 
+timezone = "Asia/Kolkata"
 base_domain = env("BASE_DOMAIN")
 database_url = env("DATABASE_URL")
 secret = os.environ.get("BOTTLE_SECRET", "pyjdoorman")
+secrets_cache_path = Path(".secret")
 print(database_url)
 cookie_name = "pyj"
 cookie_kwargs = {"path": "/", "domain": base_domain}
