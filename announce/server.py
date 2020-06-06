@@ -1,117 +1,45 @@
 import bottle
 from bottle_tools import fill_args
 from importlib import import_module
-from announce.models import Session
-
-
-class AutoSession:
-    name = "auto_session"
-    api = 2
-
-    def apply(self, callback, route):
-        @wraps(callback)
-        def wrapper(*a, **kw):
-            bottle.request.session = Session()
-            try:
-                return callback(*a, **kw)
-            finally:
-                bottle.request.session.close()
-
-        return wrapper
-
-    def setup(self, app):
-        self.app = app
+from announce import plugins
 
 
 app = bottle.Bottle()
-app.install(AutoSession())
+app.install(plugins.AutoSession())
+app.install(plugins.CurrentUser())
+app.install(plugins.LoginRequired())
+render = plugins.render
 
 
-@app.post("/event")
-def event_view(Event):
-    ev = Event()
-    bottle.request.session.add(ev)
+@app.get("/", name="get_login", skip=["login_required"])
+def get_login():
+    return render("login.html")
+
+
+@app.post("/login", name="post_login", skip=["login_required"])
+@fill_args
+def post_login(otp, Otp, User, LoginToken, Group):
+    o = bottle.request.session.query(Otp).filter_by(otp=otp)
+    u = bottle.request.session.query(User).filter_by(tg_handle=o.tg_handle).first()
+    if u is None:
+        u = User(tg_handle=o.tg_handle)
+        g = Group(name=o.tg_handle)
+        bottle.request.session.add(u)
+        bottle.request.session.add(g)
+    tok = LoginToken.loop_create(bottle.request.session, user=u)
+    bottle.request.session.delete(o)
     bottle.request.session.commit()
-    return {"eventid": ev.id}
-
-
-@app.get("/event")
-@fill_args
-def event_view(eventid: str, Event):
-    ev = bottle.request.session.query(Event).filter_by(id=eventid)
-    return {"eventid": ev.id}
-
-
-@app.post("/image")
-def image_view(Image):
-    im = Image()
-    # save and generate image path
-    im.path = "."
-    bottle.request.session.add(im)
-    bottle.request.session.commit()
-    return {"eventid": ev.id}
-
-
-@app.get("/creds")
-def see_creds(Cred):
-    return {}
-
-
-@app.post("/creds")
-def update_creds(Cred):
-    pass
-
-
-@app.get("/action")
-@fill_args
-def action_list(eventid: str = None):
-    actions = [
-        "twitter.tweet",
-        "linkedin.event",
-        "google.event",
-        "meetup.event",
-        "telegram.announce",
-        "website.card",
-        "mailinglist.email",
-    ]
-    if eventid is not None:
-        event = bottle.request.session.query(Event).filter_by(id=eventid)
-        actions = [ac for ac in actions if not event.actions_done.get(action, False)]
-
-    return {"available": actions}
-
-
-@app.post("/action")
-@fill_args
-def action_view(
-    eventid: str,
-    imageid: str,
-    title: str,
-    start: str,
-    end: str,
-    description: str,
-    action: str,
-    Event,
-    Image,
-):
-    key = f"announce.platforms.{action}"
-    event = bottle.request.session.query(Event).filter_by(id=eventid)
-    if event.actions_done.get(key, False):
-        return {"reason": "Action already done."}
-    im = (
-        bottle.request.session.query(Image).filter_by(id=imageid)
-        if imageid is not None
-        else None
+    bottle.response.set_cookie(
+        const.cookie_name,
+        tok.token,
+        secret=const.secret,
+        max_age=3600 * 24 * 60,
+        **const.cookie_kwargs,
     )
-    fn = import_module(key)
-    fn(
-        event=event,
-        title=title,
-        start=start,
-        end=end,
-        description=description,
-        image=im,
-    )
-    ev.actions_done[key] = True
-    bottle.request.session.commit()
-    return {}
+    return bottle.redirect(app.get_url("get_dashboard"))
+
+
+@app.get("/dash", name="get_dashboard")
+def get_dashboard():
+    groups = bottle.request.user.get_groups(bottle.request.session)
+    return render("dash.html", groups=groups)

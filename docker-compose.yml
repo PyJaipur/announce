@@ -1,0 +1,18 @@
+version: '3'
+services:
+  web:
+    image: "arjoonn/announce:1"
+    restart: always
+    volumes:
+        - .:/app
+    ports:
+        - 8080:8080
+    working_dir: /app
+    command: python -m announce
+    environment:
+        DATABASE_URL: 'postgres://postgres:password@pgsql:5432'
+  pgsql:
+    image: "postgres:alpine"
+    environment:
+        POSTGRES_USER: "postgres"
+        POSTGRES_PASSWORD: "password"
