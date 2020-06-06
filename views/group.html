@@ -7,31 +7,28 @@
   <table>
     <thead><tr><th>Name</th><th>Value</th></tr></thead>
     <tbody>
-      <tr>
-        <td>
-          <input name='new.name' placeholder='Value'>
-        </td>
-        <td>
-          <input name='new.val' placeholder='Name'>
-        </td>
-      </tr>
     {% for cred in group.credentials %}
       <tr>
         <td>
-        <input name='{cred.id}.name' value='{{cred.name}}'>
+          <input name='existing_cred_{{cred.id}}_name' value='{{cred.name}}'>
         </td>
         <td>
-        <input name='{cred.id}.val' value='{{cred.val}}'>
+          <input name='existing_cred_{{cred.id}}_value' value='{{cred.value}}'>
         </td>
       </tr>
     {% endfor %}
+      <tr>
+        <td>
+          <input name='new_cred_name' placeholder='Value'>
+        </td>
+        <td>
+          <input name='new_cred_value' placeholder='Name'>
+        </td>
+      </tr>
     </tbody>
   </table>
   </fieldset>
-  <input type='submit' value='Save'>
-</form>
 <h3>Member permissions</h3>
-<form method='post'>
   <fieldset>
   <table>
     <thead>
@@ -47,23 +44,24 @@
       <tr>
         <td>{{ mem.user.tg_handle }}</td>
         {% for cred in group.credentials %}
-        <td><input name='{{mem.id}}.{{cred.id}}' type='checkbox'
+        <td><input name='mem_perm_{{mem.id}}_{{cred.id}}' type='checkbox'
              {% if mem.has_credential(cred.name) %}checked{% endif %}></td>
         {% endfor %}
       </tr>
       {% endfor %}
     </tbody>
   </table>
-  <input name='new.member.tg_handle' placeholder='Tg username of new member'>
-  <input name='new.member.otp' placeholder='Their otp'>
+  <input name='new_member_tghandle' placeholder='Tg username of new member'>
+  <input name='new_member_otp' placeholder='Their otp'>
   </fieldset>
   <input type='submit' value='Save'>
 </form>
+<hr>
 <h3>Logs</h3>
 <table>
   <thead><tr><th>Timestamp</th><th>Action</th></tr></thead>
   <tbody>
-    {% for log in group.logs %}
+    {% for log in group.auditlogs %}
       <tr>
         <td>{{ log.timestamp }}</td>
         <td>{{ log.text }}</td>

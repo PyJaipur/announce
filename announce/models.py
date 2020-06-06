@@ -29,7 +29,7 @@ class AnonUser:
 class User(Base):
     __tablename__ = "user"
     id = Column(Integer, primary_key=True)
-    tg_handle = Column(String)
+    tg_handle = Column(String, nullable=False)
     is_anon = False
     memberships = relationship("Member", backref="user")
 
@@ -42,32 +42,48 @@ class User(Base):
         )
 
 
+class AuditLog(Base):
+    __tablename__ = "auditlog"
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    text = Column(String)
+    group_id = Column(
+        Integer, ForeignKey("group.id", ondelete="cascade"), nullable=False
+    )
+
+
 class Group(Base):
     __tablename__ = "group"
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    credentials = relationship("Cred", backref="group")
-    memberships = relationship("Member", backref="group")
-    logs = relationship("Log", backref="group", order_by=Log.timestamp)
+    credentials = relationship("Cred", backref="group", order_by="Cred.id")
+    memberships = relationship("Member", backref="group", order_by="Member.id")
+    auditlogs = relationship(
+        "AuditLog", backref="group", order_by="desc(AuditLog.timestamp)"
+    )
 
 
 class Member(Base):
     __tablename__ = "member"
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("user.id", ondelete="cascade"))
-    group_id = Column(Integer, ForeignKey("group.id", ondelete="cascade"))
     __table_args__ = (UniqueConstraint("user_id", "group_id"),)
-    allowed_creds = Column(JSON, default={})
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="cascade"), nullable=False)
+    group_id = Column(
+        Integer, ForeignKey("group.id", ondelete="cascade"), nullable=False
+    )
+    allowed_creds = Column(JSON, default={}, nullable=False)
 
     def has_credential(self, cred_name):
-        return "all" in self.allowed_creds or cred_name in self.allowed_creds
+        if self.allowed_creds.get("all"):
+            return True
+        return self.allowed_creds.get(cred_name)
 
 
 class Otp(Base):
     __tablename__ = "otp"
     id = Column(Integer, primary_key=True)
-    tg_handle = Column(String)
-    otp = Column(String)
+    tg_handle = Column(String, nullable=False)
+    otp = Column(String, nullable=False)
 
     @staticmethod
     def loop_create(session, **kwargs):
@@ -81,7 +97,7 @@ class Otp(Base):
 
 class LoginToken(Base):
     __tablename__ = "logintoken"
-    user_id = Column(Integer, ForeignKey("user.id", ondelete="cascade"))
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="cascade"), nullable=False)
     token = Column(String, nullable=False, unique=True, primary_key=True)
     has_logged_out = Column(Boolean, default=False)
     user = relationship("User")
@@ -107,7 +123,9 @@ class Cred(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     value = Column(String)
-    group_id = Column(Integer, ForeignKey("group.id", ondelete="cascade"))
+    group_id = Column(
+        Integer, ForeignKey("group.id", ondelete="cascade"), nullable=False
+    )
 
 
 class Event(Base):
@@ -132,13 +150,6 @@ class Event(Base):
         )
 
 
-class Log(Base):
-    __tablename__ = "log"
-    id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
-    group_id = Column(Integer, ForeignKey("group.id", ondelete="cascade"))
-
-
 Base.metadata.create_all(engine)
 Session = sessionmaker(engine)
 bt.common_kwargs.update(
@@ -151,5 +162,6 @@ bt.common_kwargs.update(
         "Member": Member,
         "LoginToken": LoginToken,
         "Cred": Cred,
+        "AuditLog": AuditLog,
     }
 )

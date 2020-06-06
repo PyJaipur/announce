@@ -20,22 +20,20 @@ def get_login():
 
 @app.post("/login", name="post_login", skip=["login_required"])
 @fill_args
-def post_login(otp, Otp, User, LoginToken, Group, Member, Cred):
+def post_login(otp, Otp, User, LoginToken, Group, Member, Cred, AuditLog):
     session = bottle.request.session
     o = session.query(Otp).filter_by(otp=otp).first()
     if o is None:
         return bottle.redirect(app.get_url("get_login"))
     u = session.query(User).filter_by(tg_handle=o.tg_handle).first()
     if u is None:
-        u = User(tg_handle=o.tg_handle)
-        g = Group(name=o.tg_handle)
+        u, g = User(tg_handle=o.tg_handle), Group(name=o.tg_handle)
         session.add(u)
         session.add(g)
         session.commit()
-        m = Member(user_id=u.id, group_id=g.id, allowed_creds={"all": True})
-        session.add(m)
-        c = Cred(name="owner", value="", group_id=g.id)
-        session.add(c)
+        session.add(Member(user_id=u.id, group_id=g.id, allowed_creds={"all": True}))
+        session.add(Cred(name="all", value="true", group_id=g.id))
+        session.add(AuditLog(text=f"{u.tg_handle} created the group", group_id=g.id))
         session.commit()
     tok = LoginToken.loop_create(session, user=u)
     session.delete(o)
@@ -66,5 +64,84 @@ def get_group(groupid, Group, Cred, Member):
 
 @app.post("/group", name="post_group")
 @fill_args
-def post_group(groupid):
-    pass
+def post_group(
+    groupid,
+    Otp,
+    User,
+    Member,
+    Cred,
+    AuditLog,
+    Group,
+    new_member_tghandle=None,
+    new_member_otp=None,
+    new_cred_name=None,
+    new_cred_value=None,
+):
+    session = bottle.request.session
+    I = bottle.request.user.tg_handle
+    group = session.query(Group).filter_by(id=groupid).first()
+    if group is None:
+        return bottle.redirect(app.get_url("get_dashboard"))
+    # add new members
+    if new_member_tghandle is not None and new_member_otp is not None:
+        u = session.query(User).filter_by(tg_handle=new_member_tghandle).first()
+        o = session.query(Otp).filter_by(otp=new_member_otp).first()
+        if u is not None and o is not None and o.tg_handle == u.tg_handle:
+            session.add(Member(user_id=u.id, group_id=group.id))
+            session.add(AuditLog(text=f"{I} invited {u.tg_handle}", group_id=group.id,))
+    # Add new credentials
+    if new_cred_name and new_cred_value:
+        session.add(Cred(name=new_cred_name, value=new_cred_value, group_id=group.id))
+        session.add(AuditLog(text=f"{I} added {new_cred_name}", group_id=group.id,))
+    # Update existing credentials
+    for key, value in bottle.request.forms.items():
+        value = value.strip()
+        if key.startswith("existing_cred_") and key.endswith("_name"):
+            _, _, cid, _ = key.split("_")
+            c = session.query(Cred).filter_by(id=cid).first()
+            if value == "":
+                session.delete(c)
+                session.add(AuditLog(text=f"{I} deleted {c.name}", group_id=group.id,))
+            else:
+                if str(c.name) != str(value):
+                    session.add(
+                        AuditLog(
+                            text=f"{I} renamed {c.name} to {value}, group_id=group.id"
+                        )
+                    )
+                c.name = str(value)
+                var_value = str(
+                    bottle.request.forms.get(f"existing_cred_{cid}_value")
+                ).strip()
+                if str(c.value) != str(var_value):
+                    session.add(
+                        AuditLog(
+                            text=f"{I} changed the value of {c.name}",
+                            group_id=group.id,
+                        )
+                    )
+                c.value = var_value
+    # member permissions
+    for c in group.credentials:
+        for m in group.memberships:
+            key = f"mem_perm_{m.id}_{c.id}"
+            set_on = bottle.request.forms.get(key) == "on"
+            is_on = m.has_credential(c.name)
+            if set_on and not is_on:
+                m.allowed_creds = {**m.allowed_creds, c.name: True}
+                session.add(
+                    AuditLog(
+                        text=f"{I} gave {m.user.tg_handle} access to {c.name}",
+                        group_id=group.id,
+                    )
+                )
+            elif not set_on and is_on:
+                m.allowed_creds = {**m.allowed_creds, c.name: False}
+                session.add(
+                    AuditLog(
+                        text=f"{I} revoke {m.user.tg_handle} access to {c.name}",
+                        group_id=group.id,
+                    )
+                )
+    session.commit()
+    return bottle.redirect(app.get_url("get_group", groupid=groupid))
