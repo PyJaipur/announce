@@ -4,7 +4,6 @@ import argparse
 import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler
-from announce import models
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -12,6 +11,21 @@ logging.basicConfig(
 
 
 # ===============================
+intro = """\
+Hello!
+
+PyJaipur is a community of students and working professionals in Jaipur.
+
+- We use telegram for our chat.
+- pyjaipur.org is our website.
+- We have a presence on lot of social platforms. Subscribe to any of them to receive updates about events. Alternatively you could also just join the telegram group.
+
+**Rules for chat**
+
+1. No promotional links in the main chat group. Please use the links group for that.
+2. Be polite. In text conversations, the way you say a sentence is lost so normal things can appear rude.
+3. When asking a question, please follow dontasktoask.com
+"""
 
 
 def capcha():
@@ -23,40 +37,18 @@ def check(capcha, answer):
     return str(answer).strip() == str(len(capcha)).strip()
 
 
-def chat(update, context):
-    w = capcha()
-    context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=f"""
-Before you can join our chat group, we need to verify that you're a well
-intentioned person and not a spam account.
-
-To do that, please tell us how many characters are there in the word `{w}`.
-
-Make sure that you reply to this message with a number and not a word. For
-example, the word `list` has 4 letters in it and so you should reply with `4`.
-    """,
-    )
-
-
-def error_callback(update, context):
-    logger.warning('Update "%s" caused error "%s"', update, context.error)
-
-
 def start(update, context):
     keyboard = []
-    keyboard.append([InlineKeyboardButton("Join telegram group", callback_data="1")])
-    keyboard.append([InlineKeyboardButton("Join event call", callback_data="2")])
-    keyboard.append([InlineKeyboardButton("Get otp", callback_data="3")])
+    keyboard.append([InlineKeyboardButton("PyJaipur intro", callback_data="intro")])
+    keyboard.append(
+        [InlineKeyboardButton("Join telegram group", callback_data="joingroup")]
+    )
+    keyboard.append([InlineKeyboardButton("Join event call", callback_data="livecall")])
+    keyboard.append([InlineKeyboardButton("Get otp", callback_data="getotp")])
     reply_markup = InlineKeyboardMarkup(keyboard)
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="""Welcome to pyjaipur!
-
-Please visit pyjaipur.org when you get the chance to see the latest of what's happening.
-
-To join our community chat please reply with `/chat`.
-        """,
+        text="""Welcome to pyjaipur! What would you like to do?""",
         reply_markup=reply_markup,
     )
 
@@ -64,6 +56,8 @@ To join our community chat please reply with `/chat`.
 def callback_handler(update, context):
     query = update.callback_query
     query.answer()
+    if query.data == "intro":
+        context.bot.send_message(chat_id=update.effective_chat.id, text=intro)
     if query.data.startswith("cap."):
         _, cap, n = query.data.split(".")
         if check(cap, n):
@@ -75,8 +69,7 @@ def callback_handler(update, context):
             context.bot.send_message(
                 chat_id=update.effective_chat.id, text="Wrong answer."
             )
-        return
-    if query.data == "1":
+    if query.data == "joingroup":
         cap = capcha()
         keyboard = [
             [(lambda x: InlineKeyboardButton(x, callback_data=f"cap.{cap}.{x}"))(num)]
@@ -90,17 +83,19 @@ def callback_handler(update, context):
             text=f"How many letters are there in the word `{cap}`?",
             reply_markup=reply_markup,
         )
-    elif query.data == "2":
+    elif query.data == "livecall":
         context.bot.send_message(
             chat_id=update.effective_chat.id, text=f"Open pyjaipur.org/#call"
         )
-    elif query.data == "3":
+    elif query.data == "getotp":
         if update.effective_user.username is None:
             context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text="Please set your username in order to receive an otp",
             )
         else:
+            from announce import models
+
             session = models.Session()
             try:
                 otp = models.Otp.loop_create(
