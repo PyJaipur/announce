@@ -6,10 +6,9 @@
   {% if event.allow_action(action.slug) %}
   <a href='{{ url_for('get_action', action=action.slug, eventid=event.id)}}'>
     <button>{{ action.name }}</button></a>
-  {% else %}
-    <button disabled>G-calendar</button>
   {% endif %}
 {% endfor %}
+<hr>
 <form method='post'>
   <fieldset>
     <label>Title</label>

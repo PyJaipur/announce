@@ -6,16 +6,48 @@ import pickle
 import os.path
 from urllib.parse import urlparse, parse_qs, urlencode
 from announce import const
+import os
+import pickle
+import requests
+from requests_oauthlib import OAuth1Session
+from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from urllib.parse import urlparse, parse_qs, urlencode
+from announce import const
 
 
 def preprocess(event):
     return event
 
 
-def run(session, event):
-    if event.add_to_cal is not None:
-        return event
-    service = session
+def auth(path):
+    SCOPES = ["https://www.googleapis.com/auth/calendar"]
+    creds = None
+    if os.path.exists(path / "googletoken.pickle"):
+        with open(path / "googletoken.pickle", "rb") as token:
+            creds = pickle.load(token)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                path / "credentials.json", SCOPES
+            )
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open(path / "googletoken.pickle", "wb") as token:
+            pickle.dump(creds, token)
+    service = build("calendar", "v3", credentials=creds)
+    return service
+
+
+def run(event, info):
+    session = 
+    if 'completed' in info:
+        return info
+    service = refresh_google()
     body = {
         "summary": event.title,
         "description": event.short,

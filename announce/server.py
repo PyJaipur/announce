@@ -224,10 +224,11 @@ def post_action(eventid, action, Event, AuditLog):
     event = session.query(Event).filter_by(id=eventid).first()
     if event is None:
         return bottle.redirect(app.get_url("get_dashboard"))
+    # Can user perform this action?
     f_event = event.freeze()
     mod = import_module(f_action)
     event = mod.preprocess(f_event)
-    updated_info = mod.run(f_event, bottle.request.user)
+    updated_info = mod.run(f_event, f_event.actions_info.get(action, {}))
     inf = event.freeze().actions_info
     inf.update(updated_info)
     event.actions_info = inf
