@@ -185,17 +185,7 @@ def get_event(eventid, Event):
     event = session.query(Event).filter_by(id=eventid).first()
     if event is None:
         return bottle.redirect(app.get_url("get_dashboard"))
-    Ac = namedtuple("Ac", "name slug")
-    actions = [
-        Ac("G-calendar", "announce.platforms.google"),
-        Ac("Website", "announce.platforms.website"),
-        Ac("Linkedin", "announce.platforms.linkedin"),
-        Ac("Meetup", "announce.platforms.meetup"),
-        Ac("Twitter", "announce.platforms.twitter"),
-        Ac("Mailing list", "announce.platforms.mailinglist"),
-        Ac("Telegram", "announce.platforms.telegram"),
-    ]
-    return render("event.html", event=event, actions=actions)
+    return render("event.html", event=event, actions=const.actions)
 
 
 @app.post("/event", name="post_event")
@@ -225,3 +215,24 @@ def get_action(eventid, action, Event):
     mod = import_module(action)
     event = mod.preprocess(event)
     return render("action.html", event=event, action=action)
+
+
+@app.post("/action", name="post_action")
+@fill_args
+def post_action(eventid, action, Event, AuditLog):
+    session = bottle.request.session
+    event = session.query(Event).filter_by(id=eventid).first()
+    if event is None:
+        return bottle.redirect(app.get_url("get_dashboard"))
+    f_event = event.freeze()
+    mod = import_module(f_action)
+    event = mod.preprocess(f_event)
+    updated_info = mod.run(f_event, bottle.request.user)
+    inf = event.freeze().actions_info
+    inf.update(updated_info)
+    event.actions_info = inf
+    session.add(
+        AuditLog(text=f"{I} ran {action} for {event.id}", group_id=event.group_id)
+    )
+    session.commit()
+    return bottle.redirect(app.get_url("get_event", eventid=eventid))

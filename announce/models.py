@@ -185,8 +185,12 @@ class Event(Base):
             )
         )
 
-    def allow_action(self, action):
-        return self.actions_info.get(action, {}).get("available", True)
+    def allow_action(self, action_slug):
+        if action_slug != const.gcalendar.slug:
+            # calendar entry must be done first
+            if self.allow_action(const.gcalendar.slug):
+                return False
+        return self.actions_info.get(action_slug, {}).get("available", True)
 
 
 Base.metadata.create_all(engine)
