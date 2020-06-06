@@ -27,14 +27,8 @@ def post_login(otp, Otp, User, LoginToken, Group, Member, Cred, AuditLog):
         return bottle.redirect(app.get_url("get_login"))
     u = session.query(User).filter_by(tg_handle=o.tg_handle).first()
     if u is None:
-        u, g = User(tg_handle=o.tg_handle), Group(name=o.tg_handle)
-        session.add(u)
-        session.add(g)
-        session.commit()
-        session.add(Member(user_id=u.id, group_id=g.id, allowed_creds={"all": True}))
-        session.add(Cred(name="all", value="true", group_id=g.id))
-        session.add(AuditLog(text=f"{u.tg_handle} created the group", group_id=g.id))
-        session.commit()
+        u = User(tg_handle=o.tg_handle)
+        g = Group.new_group(session, creator=u, name=f"{u.tg_handle}-group")
     tok = LoginToken.loop_create(session, user=u)
     session.delete(o)
     session.commit()
@@ -50,8 +44,16 @@ def post_login(otp, Otp, User, LoginToken, Group, Member, Cred, AuditLog):
 
 @app.get("/dash", name="get_dashboard")
 def get_dashboard():
-    groups = bottle.request.user.get_groups(bottle.request.session)
-    return render("dash.html", groups=groups)
+    return render("dash.html")
+
+
+@app.post("/newgroup", name="post_newgroup")
+@fill_args
+def post_newgroup(groupname, Group):
+    session = bottle.request.session
+    u = bottle.request.user
+    Group.new_group(session, creator=u, name=groupname)
+    return bottle.redirect(app.get_url("get_dashboard"))
 
 
 @app.get("/group", name="get_group")
@@ -85,9 +87,13 @@ def post_group(
     # add new members
     if new_member_tghandle is not None and new_member_otp is not None:
         u = session.query(User).filter_by(tg_handle=new_member_tghandle).first()
+        if u is None:
+            u = User(tg_handle=new_member_tghandle)
+            session.add(u)
         o = session.query(Otp).filter_by(otp=new_member_otp).first()
         if u is not None and o is not None and o.tg_handle == u.tg_handle:
             session.add(Member(user_id=u.id, group_id=group.id))
+            session.delete(o)
             session.add(AuditLog(text=f"{I} invited {u.tg_handle}", group_id=group.id,))
     # Add new credentials
     if new_cred_name and new_cred_value:
@@ -145,3 +151,12 @@ def post_group(
                 )
     session.commit()
     return bottle.redirect(app.get_url("get_group", groupid=groupid))
+
+
+@app.get("/events", name="get_events")
+@fill_args
+def get_events(groupid, Group):
+    session = bottle.request.session
+    I = bottle.request.user.tg_handle
+    group = session.query(Group).filter_by(id=groupid).first()
+    return render("events.html", group=group)

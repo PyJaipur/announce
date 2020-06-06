@@ -95,14 +95,20 @@ def callback_handler(update, context):
             chat_id=update.effective_chat.id, text=f"Open pyjaipur.org/#call"
         )
     elif query.data == "3":
-        session = models.Session()
-        try:
-            otp = models.Otp.loop_create(
-                session, tg_handle=update.effective_user.username
+        if update.effective_user.username is None:
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="Please set your username in order to receive an otp",
             )
-            context.bot.send_message(chat_id=update.effective_chat.id, text=otp.otp)
-        finally:
-            session.close()
+        else:
+            session = models.Session()
+            try:
+                otp = models.Otp.loop_create(
+                    session, tg_handle=update.effective_user.username
+                )
+                context.bot.send_message(chat_id=update.effective_chat.id, text=otp.otp)
+            finally:
+                session.close()
 
 
 def run():

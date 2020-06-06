@@ -33,14 +33,6 @@ class User(Base):
     is_anon = False
     memberships = relationship("Member", backref="user")
 
-    def get_groups(self, session):
-        return (
-            session.query(Group)
-            .join(Member)
-            .filter(Member.user_id == self.id)
-            .distinct()
-        )
-
 
 class AuditLog(Base):
     __tablename__ = "auditlog"
@@ -61,6 +53,26 @@ class Group(Base):
     auditlogs = relationship(
         "AuditLog", backref="group", order_by="desc(AuditLog.timestamp)"
     )
+
+    @staticmethod
+    def new_group(session, creator, **kwargs):
+        g = Group(**kwargs)
+        session.add(g)
+        session.commit()
+        session.add(Cred(name="all", value="-", group_id=g.id))
+        session.add(Cred(name="manage", value="-", group_id=g.id))
+        session.add(
+            Member(
+                user_id=creator.id,
+                group_id=g.id,
+                allowed_creds={"all": True, "manage": True},
+            )
+        )
+        session.add(
+            AuditLog(text=f"{creator.tg_handle} created the group", group_id=g.id)
+        )
+        session.commit()
+        return g
 
 
 class Member(Base):

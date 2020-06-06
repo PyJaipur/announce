@@ -1,9 +1,17 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Groups</h2>
-<ul>
-{% for group in groups %}
-<li><a href='{{ url_for('get_group', groupid=group.id) }}'>{{ group.name }}</a></li>
+{% for mem in request.user.memberships %}
+  {% set group = mem.group %}
+  <li>
+    <a href='{{ url_for('get_group', groupid=group.id) }}'>Management page</a> |
+    <a href='{{ url_for('get_events', groupid=group.id) }}'>Events page</a> |
+    {{ group.name }}
+  </li>
 {% endfor %}
 </ul>
+<form action='/newgroup' method='post'>
+  <input name='groupname' placeholder='group name'>
+  <input type='submit' value='Create new group'>
+</form>
 {% endblock %}
