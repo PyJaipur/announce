@@ -1,3 +1,9 @@
 {% extends 'base.html' %}
-{% block body %}
+{% block content %}
+<h2>Groups</h2>
+<ul>
+{% for group in groups %}
+<li><a href='{{ url_for('get_group', groupid=group.id) }}'>{{ group.name }}</a></li>
+{% endfor %}
+</ul>
 {% endblock %}

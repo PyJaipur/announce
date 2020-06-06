@@ -7,11 +7,12 @@ def env(key, default=None):
     return val
 
 
+base_domain = env("BASE_DOMAIN")
 database_url = env("DATABASE_URL")
 secret = os.environ.get("BOTTLE_SECRET", "pyjdoorman")
+print(database_url)
 cookie_name = "pyj"
 cookie_kwargs = {"path": "/", "domain": base_domain}
-base_domain = env("BASE_DOMAIN")
 protocol = "https"
 is_dev = base_domain is None
 if is_dev:

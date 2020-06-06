@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
-{% block body %}
+{% block content %}
 <ol>
   <li>Please start a chat with @pyjdoorman_bot on telegram to login and ask for an otp.</li>
-  <li>Enter that otp here <form action='/login'><input name='otp' placeholder='otp'/> </form></li>
+  <li>Enter that otp here <form action='/login' method='post'><input name='otp' placeholder='otp'/> <input type=submit value='Submit'></form></li>
 </ol>
 {% endblock %}

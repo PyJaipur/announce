@@ -1,18 +1,29 @@
 version: '3'
 services:
+  bot:
+    image: "arjoonn/announce:2"
+    restart: always
+    volumes:
+        - .:/app
+    working_dir: /app
+    command: "bash -c '(source .secret/env && python -m announce bot)'"
+    environment:
+        DATABASE_URL: 'postgres://postgres:password@pgsql:5432'
   web:
-    image: "arjoonn/announce:1"
+    image: "arjoonn/announce:2"
     restart: always
     volumes:
         - .:/app
     ports:
         - 8080:8080
     working_dir: /app
-    command: python -m announce
+    command: "bash -c '(source .secret/env && python -m announce server)'"
     environment:
         DATABASE_URL: 'postgres://postgres:password@pgsql:5432'
   pgsql:
     image: "postgres:alpine"
+    ports:
+        - 5432:5432
     environment:
         POSTGRES_USER: "postgres"
         POSTGRES_PASSWORD: "password"

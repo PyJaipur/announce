@@ -1,12 +1,14 @@
 import bottle
-from announce import models
+from announce import models, const
+from functools import wraps
 
 
-def render(template_name, **kwargs):
-    kwargs.update(
-        {"request": bottle.request,}
-    )
-    return bottle.jinja2_template(template_name, **kwargs)
+def make_render(app):
+    def render(template_name, **kwargs):
+        kwargs.update({"request": bottle.request, "url_for": app.get_url})
+        return bottle.jinja2_template(template_name, **kwargs)
+
+    return render
 
 
 class Plugin:

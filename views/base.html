@@ -2,11 +2,12 @@
 <html lang="en">
   <head>
     <title>Announce</title>
-    <link rel="stylesheet" type="text/css" media="screen" href='https://unpkg.com/sakura.css/css/{{ ui_theme }}.css' >
+    <link rel="stylesheet" type="text/css" media="screen" href='https://unpkg.com/sakura.css/css/sakura.css' >
     <script src="https://unpkg.com/htmx.org@0.0.4"></script>
     {% block head %}{% endblock %}
   </head>
   <body>
+  <h1> User: {{ request.user.tg_handle if not request.user.is_anon else '---' }} </h1>
   {% block content %}
   {% endblock %}
   </body>

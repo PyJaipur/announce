@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Group: {{ group.name }}</h2>
+<h3>Credentials</h3>
+<form method='post'>
+  <fieldset>
+  <table>
+    <thead><tr><th>Name</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>
+          <input name='new.name' placeholder='Value'>
+        </td>
+        <td>
+          <input name='new.val' placeholder='Name'>
+        </td>
+      </tr>
+    {% for cred in group.credentials %}
+      <tr>
+        <td>
+        <input name='{cred.id}.name' value='{{cred.name}}'>
+        </td>
+        <td>
+        <input name='{cred.id}.val' value='{{cred.val}}'>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </fieldset>
+  <input type='submit' value='Save'>
+</form>
+<h3>Member permissions</h3>
+<form method='post'>
+  <fieldset>
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        {% for cred in group.credentials %}
+        <th>{{ cred.name }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for mem in group.memberships %}
+      <tr>
+        <td>{{ mem.user.tg_handle }}</td>
+        {% for cred in group.credentials %}
+        <td><input name='{{mem.id}}.{{cred.id}}' type='checkbox'
+             {% if mem.has_credential(cred.name) %}checked{% endif %}></td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <input name='new.member.tg_handle' placeholder='Tg username of new member'>
+  <input name='new.member.otp' placeholder='Their otp'>
+  </fieldset>
+  <input type='submit' value='Save'>
+</form>
+<h3>Logs</h3>
+<table>
+  <thead><tr><th>Timestamp</th><th>Action</th></tr></thead>
+  <tbody>
+    {% for log in group.logs %}
+      <tr>
+        <td>{{ log.timestamp }}</td>
+        <td>{{ log.text }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+
