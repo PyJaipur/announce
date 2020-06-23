@@ -2,11 +2,17 @@ Announce
 ========
 
 
+[http://localhost:8080](http://localhost:8080/dash)
+
+## Features
+
 - login with telegram
 - Create a new group
 - Add events to the group
 - Perform actions on multiple platforms
 
+
+## Local dev
 
 Create a `.secret` folder. Add `env` to it:
 
@@ -22,3 +28,6 @@ export MEETUP_CLIENT_ID=xxx
 export MEETUP_CLIENT_SECRET=xxx
 export TG_TOKEN=xxx
 ```
+
+- Then do `docker-compose up web pgsql`.
+- To run one-off functions take a look at the `python -m announce run --fn new_otp` commands.

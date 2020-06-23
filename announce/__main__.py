@@ -1,8 +1,9 @@
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("cmd", choices=("server", "bot"))
+parser.add_argument("cmd", choices=("server", "bot", "run"))
 parser.add_argument("--port", type=int, default=8080)
+parser.add_argument("--fn", type=str, default=None)
 
 args = parser.parse_args()
 
@@ -14,3 +15,7 @@ elif args.cmd == "bot":
     from announce.bot import run
 
     run()
+elif args.cmd == "run":
+    from announce.housekeeping import handle
+
+    handle(args)
