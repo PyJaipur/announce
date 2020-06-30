@@ -30,4 +30,4 @@ export TG_TOKEN=xxx
 ```
 
 - Then do `docker-compose up web pgsql`.
-- To run one-off functions take a look at the `python -m announce run --fn new_otp` commands.
+- To create an otp for development, `docker-compose exec web python -m announce run --fn hello`.
