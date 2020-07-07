@@ -18,23 +18,23 @@ def get_login():
     if not bottle.request.user.is_anon:
         return bottle.redirect(app.get_url("get_dashboard"))
     render("login.html")
-
+    
 
 @app.post("/login", name="post_login", skip=["login_required"])
 @fill_args
 def post_login(otp, Otp, User, LoginToken, Group, Member, Cred, AuditLog):
     session = bottle.request.session
-    #o = session.query(Otp).filter_by(otp=otp).first()
-    #if o is None:
-    #    return bottle.redirect(app.get_url("get_login"))
-    u = session.query(User).filter_by(tg_handle='anch_72').first()
+    o = session.query(Otp).filter_by(otp=otp).first()
+    if o is None:
+        return bottle.redirect(app.get_url("get_login"))
+    u = session.query(User).filter_by(tg_handle=o.tg_handle).first()
     if u is None:
-        u = User(tg_handle='anch_72')
+        u = User(tg_handle=o.tg_handle)
         session.add(u)
         g = Group.new_group(session, creator=u, name=f"{u.tg_handle}-group")
     tok = LoginToken.loop_create(session, user=u)
-   # session.delete(o)
-   #session.commit()
+    session.delete(o)
+    session.commit()
     bottle.response.set_cookie(
         const.cookie_name,
         tok.token,
