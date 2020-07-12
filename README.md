@@ -1,8 +1,7 @@
 Announce
 ========
 
-
-[http://localhost:8080](http://localhost:8080/dash)
+[![master](https://img.shields.io/badge/heroku-Master%20branch-green)](https://announce-pyj.herokuapp.com)
 
 ## Features
 
