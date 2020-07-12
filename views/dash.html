@@ -8,7 +8,7 @@
     <a href='{{ url_for('get_events', groupid=group.id) }}'>Events page</a> |
     {{ group.name }} |
     <a href='{{ url_for('del_group', groupid=group.id) }}'>
-      <button type="submit">Delete Group</button>
+      <button>Delete Group</button>
     </a>
   </li>
 {% endfor %}
