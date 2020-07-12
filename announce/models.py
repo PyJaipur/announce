@@ -56,11 +56,11 @@ class Group(Base):
     __tablename__ = "group"
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    credentials = relationship("Cred", backref="group", order_by="Cred.id")
-    memberships = relationship("Member", backref="group", order_by="Member.id")
-    events = relationship("Event", backref="group", order_by="Event.start")
+    credentials = relationship("Cred", backref="group", passive_deletes=True , order_by="Cred.id")
+    memberships = relationship("Member", backref="group", passive_deletes=True , order_by="Member.id")
+    events = relationship("Event", backref="group", passive_deletes=True , order_by="Event.start")
     auditlogs = relationship(
-        "AuditLog", backref="group", order_by="desc(AuditLog.timestamp)"
+        "AuditLog", backref="group", passive_deletes=True , order_by="desc(AuditLog.timestamp)"
     )
 
     @staticmethod
@@ -90,9 +90,9 @@ class Member(Base):
     __tablename__ = "member"
     id = Column(Integer, primary_key=True)
     __table_args__ = (UniqueConstraint("user_id", "group_id"),)
-    user_id = Column(Integer, ForeignKey("user.id", ondelete="cascade"), nullable=False)
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
     group_id = Column(
-        Integer, ForeignKey("group.id", ondelete="cascade"), nullable=False
+        Integer, ForeignKey("group.id", ondelete="CASCADE"), nullable=False
     )
     allowed_creds = Column(JSON, default={}, nullable=False)
 

@@ -6,7 +6,10 @@
   <li>
     <a href='{{ url_for('get_group', groupid=group.id) }}'>Management page</a> |
     <a href='{{ url_for('get_events', groupid=group.id) }}'>Events page</a> |
-    {{ group.name }}
+    {{ group.name }} |
+    <a href='{{ url_for('del_group', groupid=group.id) }}'>
+      <button>Delete Group</button>
+    </a>
   </li>
 {% endfor %}
 </ul>

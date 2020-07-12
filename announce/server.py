@@ -18,7 +18,7 @@ def get_login():
     if not bottle.request.user.is_anon:
         return bottle.redirect(app.get_url("get_dashboard"))
     return render("login.html")
-
+    
 
 @app.post("/login", name="post_login", skip=["login_required"])
 @fill_args
@@ -65,6 +65,17 @@ def get_group(groupid, Group, Cred, Member):
     session = bottle.request.session
     group = session.query(Group).filter_by(id=groupid).first()
     return render("group.html", group=group)
+
+@app.get("/delgroup", name="del_group")
+@fill_args
+def del_group(groupid,Group):
+    session = bottle.request.session
+    g = session.query(Group).filter_by(id=groupid).first()
+    if g is None:
+    	return bottle.abort(404, 'no such group')
+    session.delete(g)
+    session.commit()
+    return bottle.redirect(app.get_url("get_dashboard"))
 
 
 @app.post("/group", name="post_group")
