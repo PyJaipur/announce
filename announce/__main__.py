@@ -11,7 +11,7 @@ args = parser.parse_args()
 if args.cmd == "server":
     from announce.server import app
 
-    app.run(port=args.port, host="0.0.0.0", debug=True, server="gunicorn")
+    app.run(port=args.port, host="0.0.0.0", debug=True, server="gunicorn", workers=1)
 elif args.cmd == "bot":
     from announce.bot import run
 
