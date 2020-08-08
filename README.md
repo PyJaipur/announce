@@ -25,7 +25,7 @@ export LINKEDIN_CLIENT_ID=xxx
 export LINKEDIN_CLIENT_SECRET=xxx
 export MEETUP_CLIENT_ID=xxx
 export MEETUP_CLIENT_SECRET=xxx
-export TG_TOKEN=xxx
+export TG_TOKEN=xxxx
 ```
 
 - Then do `docker-compose up web pgsql`.
